@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+
+const inquirer = require('inquirer')
+const fs = require('fs')
+const chalk = require('chalk')
+
+let question = [{
+    name: "name",
+    type: 'input',
+    message: "Enter the name of the project to delete.",
+    validate(val) {
+        if (val === '') {
+            return 'Name is required!'
+        } else {
+            if (fs.existsSync(val)) {
+                return true;
+            }
+            return 'Name does not exist.'
+        }
+    }
+}];
+
+inquirer.prompt(question).then(answers => {
+    let { name } = answers;
+    fs.rmdir(name,{recursive: true}, (err)=>{
+        if(err) {
+            console.log(chalk.red('Deletion failed'));
+            console.log(err)
+            return;
+        }
+        console.log(chalk.green('Deletion success'));
+    })
+})

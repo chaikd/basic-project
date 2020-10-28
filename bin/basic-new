@@ -1,0 +1,77 @@
+#!/usr/bin/env node
+
+const inquirer = require('inquirer')
+const chalk = require('chalk')
+const download = require('download-git-repo')
+const fs = require('fs')
+const ora = require('ora')
+const spinner = ora('Loading...');
+
+
+// 自定义交互式命令行的问题及简单的校验
+const nameQuestion = {
+    name: "name",
+    type: 'input',
+    message: "Enter the project name.",
+    validate(val) {
+        if (val === '') {
+            return 'Name is required!'
+        } else {
+            if (fs.existsSync(val)) {
+                return 'Name already exists.';
+            }
+            return true
+        }
+    }
+}, frameQuestion = {
+    name: "frame",
+    type: 'list',
+    message: "Choose a frame.",
+    choices: [
+        "Angular",
+        "Vue"
+    ],
+    validate(val) {
+        if (val === '') return 'Frame is required!'
+        return true
+    }
+};
+let question = [nameQuestion, frameQuestion];
+
+inquirer
+    .prompt(question).then(answers => {
+        // answers 就是用户输入的内容，是个对象
+        let { name, frame } = answers;
+        let tplUrl = '';
+        spinner.start();
+        switch(frame) {
+            case 'Angular':
+                tplUrl = 'https://github.com:chaikd/base-ng-template#master'
+                break
+            case 'Vue':
+                tplUrl = 'https://github.com:chaikd/base-vue-template#master'
+                break
+            default:
+                tplUrl = 'https://github.com:chaikd/base-ng-template#master'
+        }
+        writefile(name, tplUrl)
+    })
+
+
+function writefile(name, url) {
+    download(url, name, { clone: true }, (err) => {
+        if (err) {
+            console.log(err);
+            spinner.fail();
+            console.log(chalk.red('Loading failure.'));
+            return;
+        }
+        spinner.succeed()
+        console.log(chalk.green('Loading finish.'));
+        const fileName = `${name}/package.json`;
+        let data = fs.readFileSync(fileName, 'utf8');
+        data = Object.assign(JSON.parse(data),{name});
+        fs.writeFileSync(fileName, JSON.stringify(data, null, '\t'));
+        console.log(chalk.green('Initialize project completion.'))
+    })
+}
